@@ -29,6 +29,20 @@ The `marketplace` dimension has two flavors, which share the application ID `com
 
 Debug builds take the application ID `com.geeksville.mesh.<flavor>.debug`, so they install beside a release build. A release build is signed only when `keystore.properties` names a keystore; without one it is unsigned. ABI splits produce per-ABI APKs plus a universal one, and `-Pmeshtastic.disableAbiSplits=true` turns them off, as the Play bundle build does.
 
+## Wear OS
+
+The same APK runs on Wear OS watches (e.g. Pixel Watch) with every feature; there is no separate watch build.
+`wear/WearShell` takes over when `PackageManager.FEATURE_WATCH` is present:
+
+- draws the phone UI at a smaller scale (`WatchDisplay`, laid out against ~280dp) inside a margin that keeps it off
+  a round screen's clipped edges, and forces the dark theme unless the user picked light;
+- sets `LocalWatchMode`, which switches the navigation suite to the short compact bar;
+- turns crown/bezel rotation into wheel scrolling of whatever is under the screen centre (`rotaryAsMouseScroll`);
+- handles a swipe from the left edge as back, since `values-watch` turns off the window's swipe-to-dismiss.
+
+Install with `adb -s <watch> install androidApp/build/outputs/apk/<flavor>/debug/<arm APK>`. The APK carries only ARM
+ABIs, so use a real watch, not an x86 Wear emulator.
+
 ## Module dependency graph
 
 <!--region graph-->

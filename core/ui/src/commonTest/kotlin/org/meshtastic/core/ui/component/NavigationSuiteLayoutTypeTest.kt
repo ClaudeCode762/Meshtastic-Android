@@ -25,9 +25,11 @@ import kotlin.test.assertEquals
 
 class NavigationSuiteLayoutTypeTest {
 
-    private fun layoutFor(widthDp: Int, heightDp: Int, tabletop: Boolean = false) = navigationSuiteLayoutType(
-        WindowAdaptiveInfo(WindowSizeClass(widthDp, heightDp), Posture(isTabletop = tabletop)),
-    )
+    private fun layoutFor(widthDp: Int, heightDp: Int, tabletop: Boolean = false, isWatch: Boolean = false) =
+        navigationSuiteLayoutType(
+            WindowAdaptiveInfo(WindowSizeClass(widthDp, heightDp), Posture(isTabletop = tabletop)),
+            isWatch = isWatch,
+        )
 
     @Test
     fun phoneInPortraitUsesBottomBar() {
@@ -47,5 +49,13 @@ class NavigationSuiteLayoutTypeTest {
     @Test
     fun tabletopPostureUsesBottomBar() {
         assertEquals(NavigationSuiteType.NavigationBar, layoutFor(widthDp = 891, heightDp = 411, tabletop = true))
+    }
+
+    @Test
+    fun watchUsesShortCompactBar() {
+        assertEquals(
+            NavigationSuiteType.ShortNavigationBarCompact,
+            layoutFor(widthDp = 280, heightDp = 280, isWatch = true),
+        )
     }
 }

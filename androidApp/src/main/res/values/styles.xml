@@ -24,7 +24,10 @@
         <!-- The splash screen icon -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
         <!-- The theme to switch to after the splash screen is dismissed -->
-        <item name="postSplashScreenTheme">@style/Theme.AppCompat.DayNight.NoActionBar</item>
+        <item name="postSplashScreenTheme">@style/Theme.Meshtastic.Main</item>
     </style>
+
+    <!-- The app's theme after the splash; values-watch turns off the window's swipe-to-dismiss on Wear OS. -->
+    <style name="Theme.Meshtastic.Main" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
 </resources>

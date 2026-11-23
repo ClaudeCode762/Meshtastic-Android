@@ -66,6 +66,7 @@ import org.meshtastic.core.resources.disconnected
 import org.meshtastic.core.resources.node_restarting
 import org.meshtastic.core.resources.reconnecting
 import org.meshtastic.core.ui.navigation.icon
+import org.meshtastic.core.ui.util.LocalWatchMode
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 
 /**
@@ -95,7 +96,7 @@ fun MeshtasticNavigationSuite(
     val currentTabRoute = multiBackstack.currentTabRoute
     val topLevelDestination = TopLevelDestination.fromNavKey(currentTabRoute)
 
-    val layoutType = navigationSuiteLayoutType(adaptiveInfo)
+    val layoutType = navigationSuiteLayoutType(adaptiveInfo, isWatch = LocalWatchMode.current)
     val showLabels =
         layoutType == NavigationSuiteType.NavigationRail &&
             adaptiveInfo.windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
@@ -138,9 +139,14 @@ fun MeshtasticNavigationSuite(
 /**
  * A bottom bar on compact widths and in tabletop posture, a rail everywhere else. Unlike
  * [NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo], a compact height (a phone in landscape) keeps the rail:
- * a bottom bar there takes height the screen has least of, while the rail takes width it has spare.
+ * a bottom bar there takes height the screen has least of, while the rail takes width it has spare. A watch gets the
+ * short compact bar: the standard one takes a third of a round screen's height.
  */
-internal fun navigationSuiteLayoutType(adaptiveInfo: WindowAdaptiveInfo): NavigationSuiteType {
+internal fun navigationSuiteLayoutType(
+    adaptiveInfo: WindowAdaptiveInfo,
+    isWatch: Boolean = false,
+): NavigationSuiteType {
+    if (isWatch) return NavigationSuiteType.ShortNavigationBarCompact
     val compactWidth =
         !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
     return if (compactWidth || adaptiveInfo.windowPosture.isTabletop) {

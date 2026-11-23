@@ -125,6 +125,13 @@
         android:name="android.hardware.usb.host"
         android:required="false" />
 
+    <!--
+        Wear OS (e.g. Pixel Watch): the full app runs on a watch, fitted by WearShell. Optional, so phones are unaffected.
+    -->
+    <uses-feature
+        android:name="android.hardware.type.watch"
+        android:required="false" />
+
     <!-- Declare geo: intent visibility for Android 11+ (needed for resolveActivity with map apps) -->
     <queries>
         <intent>
@@ -170,6 +177,11 @@
           on a low-RAM device AND under the large-mesh + chaos-fuzz soak that motivated this, not just
           the flagship test device.
         -->
+
+        <!-- On Wear OS the app works without a paired phone app: it talks to the radio itself over BLE or TCP. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
 
         <!-- Default crash collection and analytics off until we (possibly) turn it on in application.onCreate -->
         <meta-data

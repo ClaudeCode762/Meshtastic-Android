@@ -25,6 +25,7 @@ import android.net.Uri
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
 import android.os.Bundle
+import android.view.MotionEvent
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -56,6 +57,8 @@ import org.meshtastic.app.node.component.InlineMap
 import org.meshtastic.app.node.deviceModelArViewer
 import org.meshtastic.app.node.metrics.getTracerouteMapOverlayInsets
 import org.meshtastic.app.ui.MainScreen
+import org.meshtastic.app.wear.WearShell
+import org.meshtastic.app.wear.rotaryAsMouseScroll
 import org.meshtastic.app.xr.AppSpatialShell
 import org.meshtastic.core.barcode.rememberBarcodeScanner
 import org.meshtastic.core.common.state.LaunchOptions
@@ -124,6 +127,9 @@ class MainActivity : AppCompatActivity() {
     private val isSupportedDevice: Boolean
         get() = (application as? MeshUtilApplication)?.isSupportedDevice != false
 
+    /** Wear OS: the same app, fitted to the watch by [WearShell]. */
+    private val isWatch: Boolean by lazy { packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -153,7 +159,8 @@ class MainActivity : AppCompatActivity() {
                 when (theme) {
                     AppCompatDelegate.MODE_NIGHT_YES -> true
                     AppCompatDelegate.MODE_NIGHT_NO -> false
-                    else -> isSystemInDarkTheme()
+                    // A watch face is dark; a light UI is a white disc on the wrist.
+                    else -> isWatch || isSystemInDarkTheme()
                 }
 
             // Update system bar style when theme changes
@@ -172,11 +179,13 @@ class MainActivity : AppCompatActivity() {
                     // once we've decided whether to show the intro or the main screen.
                     ReportDrawnWhen { true }
 
-                    if (appIntroCompleted || launchOptions.skipOnboarding) {
-                        AppSpatialShell { MainScreen() }
-                    } else {
-                        val introViewModel = koinViewModel<IntroViewModel>()
-                        AppIntroductionScreen(onDone = { model.onAppIntroCompleted() }, viewModel = introViewModel)
+                    WearShell(isWatch = isWatch, onBack = { onBackPressedDispatcher.onBackPressed() }) {
+                        if (appIntroCompleted || launchOptions.skipOnboarding) {
+                            AppSpatialShell { MainScreen() }
+                        } else {
+                            val introViewModel = koinViewModel<IntroViewModel>()
+                            AppIntroductionScreen(onDone = { model.onAppIntroCompleted() }, viewModel = introViewModel)
+                        }
                     }
                 }
             }
@@ -208,6 +217,19 @@ class MainActivity : AppCompatActivity() {
         // before UsbRepository was constructed. Re-poll deviceList here so the UI reflects
         // reality without requiring the user to physically replug.
         usbRepository.refreshState()
+    }
+
+    /** Scrolls whatever is under the screen's centre with the watch crown, when nothing focused took the event. */
+    override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean {
+        if (super.dispatchGenericMotionEvent(ev)) return true
+        if (!isWatch) return false
+        val decor = window.decorView
+        val wheel = rotaryAsMouseScroll(ev, decor.width / 2f, decor.height / 2f) ?: return false
+        return try {
+            decor.dispatchGenericMotionEvent(wheel)
+        } finally {
+            wheel.recycle()
+        }
     }
 
     @Suppress("LongMethod")
