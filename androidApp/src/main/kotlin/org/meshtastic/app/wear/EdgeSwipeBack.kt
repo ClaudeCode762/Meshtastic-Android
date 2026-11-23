@@ -45,13 +45,8 @@ internal fun Modifier.edgeSwipeToBack(onBack: () -> Unit): Modifier = pointerInp
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         if (down.position.x > edge) return@awaitEachGesture
         var triggered = false
-        while (true) {
-            val change =
-                awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
-            if (!change.pressed) {
-                if (triggered) change.consume()
-                break
-            }
+        var change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
+        while (change != null && change.pressed) {
             val dx = change.position.x - down.position.x
             val dy = change.position.y - down.position.y
             if (!triggered && dx > threshold && dx > abs(dy) * HORIZONTAL_DOMINANCE) {
@@ -59,6 +54,9 @@ internal fun Modifier.edgeSwipeToBack(onBack: () -> Unit): Modifier = pointerInp
                 onBack()
             }
             if (triggered) change.consume()
+            change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
         }
+        // The release of a back swipe must not click what is under the finger.
+        if (triggered) change?.consume()
     }
 }

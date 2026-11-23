@@ -25,7 +25,6 @@ import android.net.Uri
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
 import android.os.Bundle
-import android.view.MotionEvent
 import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -57,8 +56,8 @@ import org.meshtastic.app.node.component.InlineMap
 import org.meshtastic.app.node.deviceModelArViewer
 import org.meshtastic.app.node.metrics.getTracerouteMapOverlayInsets
 import org.meshtastic.app.ui.MainScreen
+import org.meshtastic.app.wear.RotaryScrollWindowCallback
 import org.meshtastic.app.wear.WearShell
-import org.meshtastic.app.wear.rotaryAsMouseScroll
 import org.meshtastic.app.xr.AppSpatialShell
 import org.meshtastic.core.barcode.rememberBarcodeScanner
 import org.meshtastic.core.common.state.LaunchOptions
@@ -151,6 +150,8 @@ class MainActivity : AppCompatActivity() {
 
         // Transparent bars, cutout mode ALWAYS and no contrast scrim, which Play's edge-to-edge checks expect.
         WindowCompat.enableEdgeToEdge(window)
+        // The watch crown scrolls whatever is under the screen's centre when nothing focused takes it.
+        if (isWatch) window.callback = RotaryScrollWindowCallback(window.callback, window)
 
         setContent {
             val theme by model.theme.collectAsStateWithLifecycle()
@@ -158,7 +159,9 @@ class MainActivity : AppCompatActivity() {
             val dark =
                 when (theme) {
                     AppCompatDelegate.MODE_NIGHT_YES -> true
+
                     AppCompatDelegate.MODE_NIGHT_NO -> false
+
                     // A watch face is dark; a light UI is a white disc on the wrist.
                     else -> isWatch || isSystemInDarkTheme()
                 }
@@ -217,19 +220,6 @@ class MainActivity : AppCompatActivity() {
         // before UsbRepository was constructed. Re-poll deviceList here so the UI reflects
         // reality without requiring the user to physically replug.
         usbRepository.refreshState()
-    }
-
-    /** Scrolls whatever is under the screen's centre with the watch crown, when nothing focused took the event. */
-    override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean {
-        if (super.dispatchGenericMotionEvent(ev)) return true
-        if (!isWatch) return false
-        val decor = window.decorView
-        val wheel = rotaryAsMouseScroll(ev, decor.width / 2f, decor.height / 2f) ?: return false
-        return try {
-            decor.dispatchGenericMotionEvent(wheel)
-        } finally {
-            wheel.recycle()
-        }
     }
 
     @Suppress("LongMethod")

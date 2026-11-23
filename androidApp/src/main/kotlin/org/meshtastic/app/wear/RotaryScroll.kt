@@ -18,6 +18,7 @@ package org.meshtastic.app.wear
 
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.Window
 
 /**
  * Turns a rotary-encoder event (the Pixel Watch crown, a rotating bezel) into a mouse-wheel event at ([x], [y]).
@@ -27,9 +28,9 @@ import android.view.MotionEvent
  * reads them), so clockwise scrolls content down. Returns null for any other event; the caller recycles the result.
  */
 internal fun rotaryAsMouseScroll(event: MotionEvent, x: Float, y: Float): MotionEvent? {
-    if (!event.isFromSource(InputDevice.SOURCE_ROTARY_ENCODER)) return null
-    if (event.actionMasked != MotionEvent.ACTION_SCROLL) return null
-    val scroll = event.getAxisValue(MotionEvent.AXIS_SCROLL)
+    val isRotaryScroll =
+        event.isFromSource(InputDevice.SOURCE_ROTARY_ENCODER) && event.actionMasked == MotionEvent.ACTION_SCROLL
+    val scroll = if (isRotaryScroll) event.getAxisValue(MotionEvent.AXIS_SCROLL) else 0f
     if (scroll == 0f) return null
     val properties =
         MotionEvent.PointerProperties().apply {
@@ -58,4 +59,23 @@ internal fun rotaryAsMouseScroll(event: MotionEvent, x: Float, y: Float): Motion
         InputDevice.SOURCE_MOUSE,
         0,
     )
+}
+
+/**
+ * Hands a rotary event nothing focused took to the window again as a wheel event at the screen's centre. The wheel
+ * event passes through here too, and is not rotary, so it is never converted twice.
+ */
+internal class RotaryScrollWindowCallback(private val delegate: Window.Callback, private val window: Window) :
+    Window.Callback by delegate {
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (delegate.dispatchGenericMotionEvent(event)) return true
+        val decor = window.decorView
+        val wheel = rotaryAsMouseScroll(event, decor.width / 2f, decor.height / 2f)
+        return wheel != null &&
+            try {
+                decor.dispatchGenericMotionEvent(wheel)
+            } finally {
+                wheel.recycle()
+            }
+    }
 }
